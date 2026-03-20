@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inspector Routes — Rutas</title>
+  <link rel="shortcut icon" href="logo2.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/seguimientoStyle.css">
+  <script src="./scripst/dexie.js"></script>
+  <script src="./scripst/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="logo-dot">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <h1>Inspector Routes</h1>
+    <nav class="header-nav">
+      <a href="inspecciones.html" class="nav-btn">Inspecciones</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2 class="section-title">Gestión de puntos por ruta</h2>
+    <p class="section-sub">Carga tu archivo Excel y consulta los registros por ruta, dirección o alias.</p>
+
+    <!-- Zona de carga -->
+    <div class="upload-zone">
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="upload-label">
+        <strong>Importar archivo Excel</strong><br>
+        Formatos aceptados: .xlsx, .xls
+      </div>
+      <input type="file" id="excelInput" accept=".xlsx, .xls">
+    </div>
+
+    <!-- Barra de estado -->
+    <div id="statusMsg" class="status-bar">📂 Esperando archivo...</div>
+
+    <!-- Barra de progreso -->
+    <div id="progressWrap" class="progress-wrap">
+      <div class="progress-info">
+        <span id="progressLabel">Procesando...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- Info del archivo cargado (ID único, sin duplicado) -->
+    <div id="fileInfo" class="file-info">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span>Archivo: <strong id="fileName">—</strong></span>
+      <span class="sep">|</span>
+      <span>Cargado el <strong id="fileDate">—</strong></span>
+    </div>
+
+    <!-- Panel de búsqueda -->
+    <div class="search-panel">
+      <h3>Filtros de búsqueda</h3>
+      <div class="search-grid">
+        <div class="field-wrap">
+          <label>Identificador de Ruta</label>
+          <input type="text" id="filtroRuta"  placeholder="Ej: 11011714">
+        </div>
+        <div class="field-wrap">
+          <label>Dirección o Ciudad</label>
+          <input type="text" id="filtroDir"   placeholder="Buscar en dirección...">
+        </div>
+        <div class="field-wrap">
+          <label>Alias del Punto</label>
+          <input type="text" id="filtroAlias" placeholder="Buscar por alias...">
+        </div>
+        <button class="btn-buscar" id="btnBuscar">Buscar</button>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div id="summaryCards" class="summary-cards">
+      <div class="scard total">
+        <span class="scard-label">Total registros</span>
+        <span class="scard-value" id="scTotal">0</span>
+        <div class="scard-bar"><div class="scard-bar-fill" id="scBarTotal" style="width:100%"></div></div>
+      </div>
+      <div class="scard verde">
+        <span class="scard-label">Realizadas</span>
+        <span class="scard-value" id="scRealizadas">0</span>
+        <div class="scard-bar"><div class="scard-bar-fill" id="scBarRealizadas" style="width:0%"></div></div>
+      </div>
+      <div class="scard rojo">
+        <span class="scard-label">Canceladas</span>
+        <span class="scard-value" id="scCanceladas">0</span>
+        <div class="scard-bar"><div class="scard-bar-fill" id="scBarCanceladas" style="width:0%"></div></div>
+      </div>
+      <div class="scard amarillo">
+        <span class="scard-label">Por realizar</span>
+        <span class="scard-value" id="scPorRealizar">0</span>
+        <div class="scard-bar"><div class="scard-bar-fill" id="scBarPorRealizar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Meta de resultados -->
+    <div class="results-meta">
+      <div id="contador"></div>
+      <div class="legend">
+        <span class="legend-dot"></span> Paradas realizadas
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="tabla-wrap">
+      <div class="tabla-scroll" id="tablaScroll">
+        <table id="tabla">
+          <thead>
+            <tr>
+              <th>Alias Punto</th>
+              <th>Dirección</th>
+              <th>Ruta</th>
+              <th>Ciudad</th>
+              <th>Tipo Servicio</th>
+              <th>Código Cliente</th>
+              <th>Estado Parada</th>
+            </tr>
+          </thead>
+          <tbody id="tablaTbody">
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                  <p>Carga un archivo Excel para comenzar a buscar registros.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="paginacion" class="pagination"></div>
+    </div>
+  </main>
+
+  <script src="./scripst/seguimiento.js"></script>
+
+</body>
+</html>
